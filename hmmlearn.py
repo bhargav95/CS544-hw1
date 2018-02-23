@@ -2,10 +2,10 @@ import re
 import sys
 import json
 
+
 def gettok(x):
     k = x.rfind('/')
     return [x[:k], x[k + 1:]]
-
 
 
 with open(sys.argv[1]) as f:
@@ -15,8 +15,11 @@ with open(sys.argv[1]) as f:
     ep = dict()
     tp = dict()
 
+    ends = dict()
+
+    tagcounter = dict()
+
     starttag = "START"
-    endtag = "END"
 
     pairs = []
     i = f.readline().rstrip()
@@ -43,14 +46,21 @@ with open(sys.argv[1]) as f:
             w = j[0]
             t = j[1]
 
-            if t in ep:
-                if w in ep[t]:
-                    ep[t][w] += 1
-                else:
-                    ep[t][w] = 1
+            # add to counters
+
+            if t in tagcounter:
+                tagcounter[t] += 1
             else:
-                ep[t] = dict()
-                ep[t][w] = 1
+                tagcounter[t] = 1
+
+            if w in ep:
+                if t in ep[w]:
+                    ep[w][t] += 1
+                else:
+                    ep[w][t] = 1
+            else:
+                ep[w] = dict()
+                ep[w][t] = 1
 
             if prevtag in tp:
                 if t in tp[prevtag]:
@@ -66,14 +76,12 @@ with open(sys.argv[1]) as f:
 
             prevtag = t
 
-        if prevtag in tp:
-            if endtag in tp[prevtag]:
-                tp[prevtag][endtag] += 1
-            else:
-                tp[prevtag][endtag] = 1
+        if j[0] in ends:
+            ends[j[0]] += 1
         else:
-            tp[prevtag] = dict()
-            tp[prevtag][endtag] = 1
+            ends[j[0]] = 1.0
+
+    tagcounter["START"] = line
 
     print "Tag Set :", len(tags)
     print "Word Set:", len(words)
@@ -87,6 +95,17 @@ with open(sys.argv[1]) as f:
 
     c = 0
 
+    for tag1 in tp:
+        for tag2 in tp[tag1]:
+            tp[tag1][tag2] /= float(tagcounter[tag1])
+
+    for word in ep:
+        for tag in ep[word]:
+            ep[word][tag] /= float(tagcounter[tag])
+
+    for i in ends:
+        ends[i] /= line
+
     for i in ep:
         for j in ep[i]:
             c += ep[i][j]
@@ -94,7 +113,11 @@ with open(sys.argv[1]) as f:
     print "Word Count: ", c
     print "Sentence Count: ", line
 
-    data = {"emission_prob": ep, "transition_prob": tp}
+    stag = sum(tagcounter.values())
+    for i in tagcounter:
+        tagcounter[i] /= float(stag)
+
+    data = {"emission_prob": ep, "transition_prob": tp, "end_tag": ends, "tag_prob": tagcounter}
 
     with open('hmmmodel.txt', 'w') as outfile:
-        json.dump(data, outfile, sort_keys=True,separators=(',', ':'))
+        json.dump(data, outfile, sort_keys=True, separators=(',', ':'), indent=0)

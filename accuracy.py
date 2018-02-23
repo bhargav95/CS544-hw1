@@ -10,6 +10,7 @@ with open(sys.argv[1]) as f1, open(sys.argv[2]) as f2:
 
     correct=0
     count=0
+    linecount=0
     while True:
         a = f1.readline()
 
@@ -21,8 +22,8 @@ with open(sys.argv[1]) as f1, open(sys.argv[2]) as f2:
         if not b:
             break
 
-        a = a.split(' ')
-        b = b.split(' ')
+        a = a.rstrip().split(' ')
+        b = b.rstrip().split(' ')
 
 
         for x,y in zip(a,b):
@@ -31,7 +32,16 @@ with open(sys.argv[1]) as f1, open(sys.argv[2]) as f2:
 
             if a1 == b1:
                 correct+=1
+            else:
+            #elif linecount in range (15,100):
+                print "Line:",
+                print linecount,
+                print [x],
+                print "should be",
+                print [y]
             count+=1
+
+        linecount+=1
 
     print correct
     print count

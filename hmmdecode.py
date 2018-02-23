@@ -3,7 +3,7 @@ from math import log
 from time import time
 import sys
 
-smooth = -15
+smooth = -8
 
 
 def gettok(x):
@@ -15,33 +15,41 @@ def doTheViterbi(sentence, tags, x):
     words = sentence.split(" ")
 
     viterbi = dict()
-    backtrace = []
+    backtrace = list()
 
     # initial prob
     backtrace.append(dict())
 
     tp = x["transition_prob"]["START"]
-    tp_sum = sum(tp.values())
+    tag = x["tag_prob"]
+    # tp_sum = sum(tp.values())
 
-    for i in tags:
-        ep = x["emission_prob"][i]
-        ep_sum = sum(ep.values())
+    w = words[0]
+
+    ep = x["emission_prob"]
+
+    if w in ep:
+        mytags = ep[w].keys()
+    else:
+        mytags = tags
+
+    for i in mytags:
+
+        # ep_sum = sum(ep.values())
 
         viterbi[i] = 0
         if i in tp:
-            viterbi[i] += log(tp[i]) - log(tp_sum)
+            viterbi[i] += log(tp[i])  # - log(tp_sum)
         else:
             viterbi[i] += smooth
             # viterbi[i] += -float("inf")
             # viterbi[i] += log(1) - log(tp_sum)
 
-        w = words[0]
         if w in ep:
-            viterbi[i] += log(ep[w]) - log(ep_sum)
+            viterbi[i] += log(ep[w][i])  # - log(ep_sum)
         else:
-            viterbi[i] += smooth
-            # viterbi[i] += -float("inf")
-            # viterbi[i] += log(1) - log(ep_sum)
+            # viterbi[i] += smooth
+            viterbi[i] += log(tag[i])
 
         backtrace[0][i] = "START"
 
@@ -54,42 +62,65 @@ def doTheViterbi(sentence, tags, x):
 
         backtrace.append(dict())
 
-        newviterbi=dict()
+        newviterbi = dict()
 
-        for cur in tags:
+        if w not in x["emission_prob"]:
+            mytags = tags
+        else:
+            mytags = x["emission_prob"][w].keys()
+
+        for cur in mytags:
             newviterbi[cur] = -float("inf")
 
-            ep = x["emission_prob"][cur]
-            ep_sum = sum(ep.values()) + len(tags)
+            ep = x["emission_prob"]
 
-            for prev in tags:
-                #print viterbi
+            for prev in viterbi.keys():
+                # print viterbi
                 temp = viterbi[prev]
 
-                tp = x["transition_prob"][prev]
-                tp_sum = sum(tp.values())
-
-                if cur in tp:
-                    temp += log(tp[cur] + 1) - log(tp_sum)
-                else:
+                if prev not in x["transition_prob"]:
                     temp += smooth
-                    # temp += -float("inf")
-                    # temp += log(1) - log(tp_sum)
+                else:
+                    tp = x["transition_prob"][prev]
+                    # tp_sum = sum(tp.values())
+
+                    if cur in tp:
+                        temp += log(tp[cur])  # - log(tp_sum)
+                    else:
+                        temp += smooth
+                        # temp += log(tag[cur])
 
                 if w in ep:
-                    temp += log(ep[w] + 1) - log(ep_sum)
+                    temp += log(ep[w][cur])  # - log(ep_sum)
                 else:
-                    temp += smooth
-                    # temp += -float("inf")
-                    # temp += log(1) - log(ep_sum)
+                    # temp += smooth
+                    temp += log(tag[cur])
 
                 if temp > newviterbi[cur]:
                     newviterbi[cur] = temp
                     backtrace[n][cur] = prev
 
-        viterbi=newviterbi
+        viterbi = newviterbi
+
+    endtags = not True
 
     finalstate = max(viterbi, key=viterbi.get)
+
+    if endtags:
+
+        ends = x["end_tag"]
+
+        endmax = -float("inf")
+        for i in viterbi:
+            if i in ends:
+                endtran = log(ends[i])
+            else:
+                endtran = smooth
+            if endmax < viterbi[i] + endtran:
+                endmax = viterbi[i] + endtran
+                finalstate = i
+    else:
+        finalstate = max(viterbi, key=viterbi.get)
 
     # Backtrack
     state = finalstate
@@ -108,7 +139,6 @@ def doTheViterbi(sentence, tags, x):
             print backtrace, "\n"
             print viterbi[10]
             print x["transition_prob"]["VBG"]["NNS"]
-            raw_input()
         n -= 1
 
     return finaltags
