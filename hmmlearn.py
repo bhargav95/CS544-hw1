@@ -120,4 +120,4 @@ with open(sys.argv[1]) as f:
     data = {"emission_prob": ep, "transition_prob": tp, "end_tag": ends, "tag_prob": tagcounter}
 
     with open('hmmmodel.txt', 'w') as outfile:
-        json.dump(data, outfile, sort_keys=True, separators=(',', ':'), indent=0)
+        json.dump(data, outfile, sort_keys=True, separators=(',', ':'))

@@ -48,8 +48,8 @@ def doTheViterbi(sentence, tags, x):
         if w in ep:
             viterbi[i] += log(ep[w][i])  # - log(ep_sum)
         else:
-            # viterbi[i] += smooth
             viterbi[i] += log(tag[i])
+            # viterbi[i] += smooth
 
         backtrace[0][i] = "START"
 
@@ -102,10 +102,9 @@ def doTheViterbi(sentence, tags, x):
 
         viterbi = newviterbi
 
-    endtags = not True
-
     finalstate = max(viterbi, key=viterbi.get)
 
+    endtags = not True
     if endtags:
 
         ends = x["end_tag"]
@@ -137,8 +136,7 @@ def doTheViterbi(sentence, tags, x):
             print len(backtrace)
             print len(words)
             print backtrace, "\n"
-            print viterbi[10]
-            print x["transition_prob"]["VBG"]["NNS"]
+
         n -= 1
 
     return finaltags
